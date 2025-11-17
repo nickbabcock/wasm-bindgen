@@ -17,6 +17,7 @@ mod interpreter;
 mod intrinsic;
 mod js;
 mod multivalue;
+mod normalize;
 mod transforms;
 pub mod wasm2es6js;
 mod wasm_conventions;
@@ -448,12 +449,16 @@ impl Bindgen {
         let mut cx = js::Context::new(&mut module, self, &adapters, &aux)?;
         cx.generate()?;
         let (js, ts, start) = cx.finalize(stem)?;
+        let npm_dependencies = cx.npm_dependencies.clone();
+
+        normalize::normalize_exports(&mut module).context("failed to normalize WASM exports")?;
+
         let generated = Generated {
             snippets: aux.snippets.clone(),
             local_modules: aux.local_modules.clone(),
             mode: self.mode.clone(),
             typescript: self.typescript,
-            npm_dependencies: cx.npm_dependencies.clone(),
+            npm_dependencies,
             js,
             ts,
             start,
